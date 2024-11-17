@@ -90,3 +90,120 @@ void GameRender(string playerName) {
     // Displaying player's score
     cout << playerName << "'s Score: " << score << endl;
 }
+
+// Function for updating the game status
+void GameUpdate() {
+    int prevX = tailX[0];
+    int prevY = tailY[0];
+    int prev2X, prev2Y;
+    tailX[0] = x;
+    tailY[0] = y;
+    for (int i = 1; i < snakeTailLength; i++) {
+        prev2X = tailX[i];
+        prev2Y = tailY[i];
+        tailX[i] = prevX;
+        tailY[i] = prevY;
+        prevX = prev2X;
+        prevY = prev2Y;
+    }
+    switch (direction) {
+        case LEFT:
+            x--;
+            break;
+        case RIGHT:
+            x++;
+            break;
+        case UP:
+            y--;
+            break;
+        case DOWN:
+            y++;
+            break;
+    }
+    // Checks for snake's collision with the walls (|)
+    if (x >= width or x < 0 or y >= height or y < 0) {
+        gameOver = true;
+    }
+    // Checks for snake's collision with the tail
+    for (int i = 0; i < snakeTailLength; i++) {
+        if (tailX[i] == x and tailY[i] == y) {
+            gameOver = true;
+        }
+    }
+    // Checks for snake's collision with the food
+    if (x == foodX and y == foodY) {
+        score += 10;
+        foodX = rand() % width;
+        foodY = rand() % height;
+        snakeTailLength++;
+    }
+}
+
+// Function to set the game difficulty
+int SetDifficulty() {
+    int difficulty = 0, choice;
+    cout << "Choose the difficulty level: " << endl << "1. Easy" << endl << "2. Medium" << endl << "3. Hard" << endl << "Note: Default difficulty level is Medium" << endl;
+    cin >> choice;
+    switch (choice) {
+        case 1:
+            difficulty = 1000;
+            break;
+        case 2:
+            difficulty = 500;
+            break;
+        case 3:
+            difficulty = 100;
+            break;
+    }
+    return difficulty;
+}
+
+// Function to check if a key is pressed (non-blocking)
+bool kbhit() {
+    struct termios oldt, newt;
+    int ch;
+    bool ch_available = false;
+
+    // Get the current terminal settings
+    tcgetattr(STDIN_FILENO, &oldt);
+    newt = oldt;
+
+    // Disable canonical mode and echo
+    newt.c_lflag &= ~(ICANON | ECHO);
+    tcsetattr(STDIN_FILENO, TCSANOW, &newt);  // Apply the new settings
+
+    ch = getchar();  // Read a character
+    if (ch != EOF) {
+        ch_available = true;
+    }
+
+    // Restore the old terminal settings
+    tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
+    return ch_available;
+}
+
+// Function to handle user input
+void UserInput() {
+    // Checks if a key is pressed or not
+    if (kbhit()) {
+        // Getting the pressed key
+        char ch = getchar();  // Capture the key pressed
+        switch (ch) {
+            case 'a':
+                direction = LEFT;
+            break;
+            case 'd':
+                direction = RIGHT;
+            break;
+            case 'w':
+                direction = UP;
+            break;
+            case 's':
+                direction = DOWN;
+            break;
+            case 'x':
+                gameOver = true;
+            break;
+        }
+    }
+}
