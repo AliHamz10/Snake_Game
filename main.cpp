@@ -1,27 +1,21 @@
-// Including necessary libraries
-#include <termios.h> // For terminal I/O
 #include <iostream>
-#include <unistd.h> // For terminal I/O
+#include <cstdlib>
+#include <ctime>
+#include <termios.h>
+#include <unistd.h>
 
 using namespace std;
 
 // Defining Global Variables
+const int height = 20;
+const int width = 20;
 
-// height and width of the grid
-constexpr int height = 20;
-constexpr int width = 20;
+int x, y;                // Snake head coordinates
+int foodX, foodY;        // Food coordinates
+int score;               // Player's score
+int tailX[100], tailY[100]; // Snake's tail coordinates
+int snakeTailLength;     // Length of the snake
 
-// Snake head coordinates (x-axis, y-axis)
-int x,y;
-// Food coordinates
-int foodX, foodY;
-// variable to store the score of the player
-int score;
-// array to store the coordinates of snakes tail (x-axis, y-axis)
-int tailX[100], tailY[100];
-// variable to store the length of the snake's __disable_tail_calls
-int snakeTailLength;
-// variable to store the direction of the snake
 enum snakesDirection {
     STOP = 0,
     LEFT,
@@ -29,11 +23,11 @@ enum snakesDirection {
     UP,
     DOWN
 };
+
 snakesDirection direction;
-// boolean variable for checking if the game is over or not
 bool gameOver;
 
-// Initializing the game
+// Function to initialize the game
 void GameInIt() {
     gameOver = false;
     direction = STOP;
@@ -42,62 +36,56 @@ void GameInIt() {
     foodX = rand() % width;
     foodY = rand() % height;
     score = 0;
+    snakeTailLength = 0;
 }
 
-// Function for drawing the game grid
-void GameRender(string playerName) {
-    system ("clear");
+// Function to render the game
+void GameRender(const string& playerName) {
+    cout << "\033[2J\033[1;1H"; // Clear screen and reset cursor position
 
-    // Creating the top walls with '-' character
-    for (int i = 0; i < width + 2; i++) {
-        cout << "-";
-    }
+    // Top wall
+    for (int i = 0; i < width + 2; i++) cout << "-";
     cout << endl;
 
+    // Game area
     for (int i = 0; i < height; i++) {
-        for (int j = 0; j <= width; j++) {
-            // Creating side walls with '|' character
-            if (j == 0 or j == width) {
-                cout << "|";
-            }
-            // Creating snakes head with '0'
-            if (i == y and j == x) {
-                cout << "0";
-            }
-            // Creating food with "#'
-            else if (i == foodY and j == foodX) {
-                cout << "#";
-            }
-            // Creating snake's head with 'o'
-            else {
-                bool prTail = false;
+        for (int j = 0; j < width + 2; j++) {
+            if (j == 0 || j == width + 1) {
+                cout << "|"; // Walls
+            } else if (i == y && j == x) {
+                cout << "O"; // Snake head
+            } else if (i == foodY && j == foodX) {
+                cout << "#"; // Food
+            } else {
+                bool isTail = false;
                 for (int k = 0; k < snakeTailLength; k++) {
-                    if (tailX[k] == j and tailY[k] == i) {
-                        cout << "o";
-                        prTail = true;
+                    if (tailX[k] == j && tailY[k] == i) {
+                        cout << "o"; // Snake tail
+                        isTail = true;
                     }
                 }
-                if (!prTail)
-                    cout << " ";
+                if (!isTail) cout << " "; // Empty space
             }
         }
         cout << endl;
     }
-    // Creating bottom walls with '-' character
-    for (int i = 0; i < width + 2; i++) {
-        cout << "-";
-    }
-    // Displaying player's score
+
+    // Bottom wall
+    for (int i = 0; i < width + 2; i++) cout << "-";
+    cout << endl;
+
+    // Display score
     cout << playerName << "'s Score: " << score << endl;
 }
 
-// Function for updating the game status
+// Function to update the game state
 void GameUpdate() {
     int prevX = tailX[0];
     int prevY = tailY[0];
     int prev2X, prev2Y;
     tailX[0] = x;
     tailY[0] = y;
+
     for (int i = 1; i < snakeTailLength; i++) {
         prev2X = tailX[i];
         prev2Y = tailY[i];
@@ -106,32 +94,39 @@ void GameUpdate() {
         prevX = prev2X;
         prevY = prev2Y;
     }
+
     switch (direction) {
         case LEFT:
             x--;
-            break;
+        break;
         case RIGHT:
             x++;
-            break;
+        break;
         case UP:
             y--;
-            break;
+        break;
         case DOWN:
             y++;
-            break;
+        break;
+        case STOP:
+            // Do nothing for STOP
+                break;
+        default:
+            break; // Optional: handle unexpected values
     }
-    // Checks for snake's collision with the walls (|)
-    if (x >= width or x < 0 or y >= height or y < 0) {
-        gameOver = true;
-    }
-    // Checks for snake's collision with the tail
+
+    // Check collision with walls
+    if (x < 0 || x >= width || y < 0 || y >= height) gameOver = true;
+
+    // Check collision with tail
     for (int i = 0; i < snakeTailLength; i++) {
-        if (tailX[i] == x and tailY[i] == y) {
+        if (tailX[i] == x && tailY[i] == y) {
             gameOver = true;
         }
     }
-    // Checks for snake's collision with the food
-    if (x == foodX and y == foodY) {
+
+    // Check collision with food
+    if (x == foodX && y == foodY) {
         score += 10;
         foodX = rand() % width;
         foodY = rand() % height;
@@ -139,71 +134,66 @@ void GameUpdate() {
     }
 }
 
-// Function to set the game difficulty
-int SetDifficulty() {
-    int difficulty = 0, choice;
-    cout << "Choose the difficulty level: " << endl << "1. Easy" << endl << "2. Medium" << endl << "3. Hard" << endl << "Note: Default difficulty level is Medium" << endl;
-    cin >> choice;
-    switch (choice) {
-        case 1:
-            difficulty = 1000;
-            break;
-        case 2:
-            difficulty = 500;
-            break;
-        case 3:
-            difficulty = 100;
-            break;
+// Function to handle user input
+void UserInput() {
+    struct termios oldt, newt;
+    tcgetattr(STDIN_FILENO, &oldt);
+    newt = oldt;
+    newt.c_lflag &= ~(ICANON | ECHO);
+    tcsetattr(STDIN_FILENO, TCSANOW, &newt);
+
+    char ch;
+    if (read(STDIN_FILENO, &ch, 1) == 1) {
+        switch (ch) {
+            case 'a': direction = LEFT; break;
+            case 'd': direction = RIGHT; break;
+            case 'w': direction = UP; break;
+            case 's': direction = DOWN; break;
+            case 'x': gameOver = true; break; // Exit game
+        }
     }
+
+    tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
+}
+
+// Function to set game difficulty
+int SetDifficulty() {
+    int difficulty = 500; // Default to medium
+    int choice;
+
+    cout << "Choose difficulty level:\n1. Easy\n2. Medium\n3. Hard\n";
+    cin >> choice;
+
+    switch (choice) {
+        case 1: difficulty = 1000; break;
+        case 2: difficulty = 500; break;
+        case 3: difficulty = 100; break;
+        default: cout << "Invalid choice, defaulting to Medium.\n";
+    }
+
     return difficulty;
 }
 
-// Function to check if a key is pressed (non-blocking)
-bool kbhit() {
-    struct termios oldt, newt;
-    int ch;
-    bool ch_available = false;
+// Main function
+int main() {
+    srand(time(0)); // Seed random number generator
 
-    // Get the current terminal settings
-    tcgetattr(STDIN_FILENO, &oldt);
-    newt = oldt;
+    string playerName;
+    cout << "Enter your name: ";
+    cin >> playerName;
 
-    // Disable canonical mode and echo
-    newt.c_lflag &= ~(ICANON | ECHO);
-    tcsetattr(STDIN_FILENO, TCSANOW, &newt);  // Apply the new settings
+    int difficulty = SetDifficulty();
 
-    ch = getchar();  // Read a character
-    if (ch != EOF) {
-        ch_available = true;
+    GameInIt();
+
+    while (!gameOver) {
+        GameRender(playerName);
+        UserInput();
+        GameUpdate();
+        usleep(difficulty * 1000); // Delay based on difficulty
     }
 
-    // Restore the old terminal settings
-    tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
-    return ch_available;
-}
+    cout << "Game Over! Final Score: " << score << endl;
 
-// Function to handle user input
-void UserInput() {
-    // Checks if a key is pressed or not
-    if (kbhit()) {
-        // Getting the pressed key
-        char ch = getchar();  // Capture the key pressed
-        switch (ch) {
-            case 'a':
-                direction = LEFT;
-            break;
-            case 'd':
-                direction = RIGHT;
-            break;
-            case 'w':
-                direction = UP;
-            break;
-            case 's':
-                direction = DOWN;
-            break;
-            case 'x':
-                gameOver = true;
-            break;
-        }
-    }
+    return 0;
 }
